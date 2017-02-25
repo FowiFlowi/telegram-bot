@@ -1,6 +1,7 @@
 const TelegramBot = require('node-telegram-bot-api'),
 	express = require('express'),
 	bodyParser = require('body-parser'),
+	fs = require('fs'),
 
 	Abstracts = require('./models/abstract'),
 	SerdechkoBot = require('./models/telegram-bot'),
