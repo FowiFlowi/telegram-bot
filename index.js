@@ -1,7 +1,6 @@
 const TelegramBot = require('node-telegram-bot-api'),
 	express = require('express'),
 	bodyParser = require('body-parser'),
-	fs = require('fs'),
 
 	Abstracts = require('./models/abstract'),
 	SerdechkoBot = require('./models/telegram-bot'),
@@ -112,7 +111,7 @@ bot.onText(/\/schedule/, (msg, match) => {
 		dateNow = new Date(),
 		dateBegin = new Date(2017, 2, 13),
 		isFirstWeek = Math.trunc(new Date(dateNow - dateBegin) / weekLen) % 2 == 0 ? 0 : 1, // or is Even?
-		weekDays = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'],
+		weekDays = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'],
 		commands = ['week', 'today', 'tomorrow'],
 		command,
 		group = 'КВ-51',
@@ -124,11 +123,11 @@ bot.onText(/\/schedule/, (msg, match) => {
 		isSetGroup = 1;
 	}
 
-	if (commands.indexOf(text[1 + isSetGroup]) + 1) {	// if command is set
-		command = text[1 + isSetGroup]
-
-	} else if (weekDays.indexOf(text[1 + isSetGroup]) + 1) {	// if command isn't set but search day is set
-		searchDay = text[1 + isSetGroup];
+	if (commands.indexOf(text[1 + isSetGroup].toLowerCase()) + 1) {	// if command is set
+		command = text[1 + isSetGroup].toLowerCase();
+	} else if (isSearchDaySpecified(text[1 + isSetGroup])) {	// if command isn't set but search day is set
+		// capitalize first letter
+		searchDay = text[1 + isSetGroup].charAt(0).toUpperCase() + text[1 + isSetGroup].slice(1).toLowerCase();
 
 		if (text[2 + isSetGroup] == 1 || text[2 + isSetGroup] == 2) // if number of week is correct
 			isFirstWeek = text[2 + isSetGroup] % 2;
@@ -136,7 +135,14 @@ bot.onText(/\/schedule/, (msg, match) => {
 			return bot.sendMessage(msg.chat.id, 'Странный у тебя номер недели');
 		
 	} else if (text[1 + isSetGroup])	// if day is set incorrect
-		return bot.sendMessage(msg.chat.id, 'Не нашел такого дня')
+		return bot.sendMessage(msg.chat.id, 'Не нашел такого дня');
+
+	function isSearchDaySpecified(string) {
+		if (!string) return 0;
+
+		string = string.charAt(0).toUpperCase() + string.slice(1).toLowerCase();
+		return weekDays.indexOf(string) + 1;
+	}
 
 	Schedule.find({ group }, (err, schedule) => {
 		if (err) return console.log(err);
@@ -155,7 +161,7 @@ bot.onText(/\/schedule/, (msg, match) => {
 				let j = command == 'today' ? 1 : 0,
 					dayNum = (new Date()).getDay(),
 					day = week[dayNum - j];
-				dayServe(day);
+				dayServe(day)
 			} else if (searchDay) {
 				dayServe(week[weekDays.indexOf(searchDay)])
 			} else week.forEach(day => dayServe(day))
@@ -164,6 +170,11 @@ bot.onText(/\/schedule/, (msg, match) => {
 
 
 		function dayServe(day) {	// function for out some day
+			if (!day) {
+				response = '';
+				return bot.sendMessage(msg.chat.id, 'У тебя выходной, расслабься');
+			}
+
 			let types = ['Лек', 'Практ', 'Лаб'];
 			response += `---${day.weekday}---\n`;
 
