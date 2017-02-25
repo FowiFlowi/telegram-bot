@@ -123,17 +123,15 @@ bot.onText(/\/schedule/, (msg, match) => {
 		isSetGroup = 1;
 	}
 
-	if (commands.indexOf(text[1 + isSetGroup].toLowerCase()) + 1) {	// if command is set
+	if (text[1 + isSetGroup] && commands.indexOf(text[1 + isSetGroup].toLowerCase()) + 1) {	// if command is set
 		command = text[1 + isSetGroup].toLowerCase();
+		if (command == 'week') 
+			if (setWeekNumber(text[2 + isSetGroup])) return; // if week number set incorrect just end
 	} else if (isSearchDaySpecified(text[1 + isSetGroup])) {	// if command isn't set but search day is set
 		// capitalize first letter
 		searchDay = text[1 + isSetGroup].charAt(0).toUpperCase() + text[1 + isSetGroup].slice(1).toLowerCase();
 
-		if (text[2 + isSetGroup] == 1 || text[2 + isSetGroup] == 2) // if number of week is correct
-			isFirstWeek = text[2 + isSetGroup] % 2;
-		else if (text[2 + isSetGroup])
-			return bot.sendMessage(msg.chat.id, 'Странный у тебя номер недели');
-		
+		if (setWeekNumber(text[2 + isSetGroup])) return;
 	} else if (text[1 + isSetGroup])	// if day is set incorrect
 		return bot.sendMessage(msg.chat.id, 'Не нашел такого дня');
 
@@ -142,6 +140,16 @@ bot.onText(/\/schedule/, (msg, match) => {
 
 		string = string.charAt(0).toUpperCase() + string.slice(1).toLowerCase();
 		return weekDays.indexOf(string) + 1;
+	};
+
+	// sets isFirstWeek, if num undefined sets current week. If num is incorrect returns 1 else 0
+	function setWeekNumber(num) {
+		let res = 0;
+		num == 1 || num == 2 ? isFirstWeek = num % 2 
+							 : num ? res = 1
+							 	   : ''
+		if (res) bot.sendMessage(msg.chat.id, 'Это у тебя четная неделя или нет, солнце?');
+		return res;
 	}
 
 	Schedule.find({ group }, (err, schedule) => {
@@ -208,7 +216,7 @@ bot.onText(/\/start/, (msg, match) => {
 bot.onText(/\/help/, (msg, match) => {
 	bot.sendMessage(msg.chat.id, `Я бот-сердечко. Записываю лекции и дарю любовь <3\n\n` +
 		`/all - посмотреть что по лекциям\n/show subject number - посмотреть конкретную лекцию\n` +
-		`/grouplist - посмотреть список своей группы\n/schedule - посмотреть расписание\n/love - дарить любовь` +
+		`/grouplist - посмотреть список своей группы\n/schedule - посмотреть расписание\n/love - дарить любовь\n` +
 		`/schedule group/day/today/tomorrow - как хочешь, так и юзаешь, чтобы посмотреть расписание любой группы потока`);
 });
 
