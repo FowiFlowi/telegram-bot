@@ -186,14 +186,14 @@ bot.onText(/\/schedule/, (msg, match) => {
 			let types = ['Лек', 'Практ', 'Лаб'];
 			response += `---${day.weekday}---\n`;
 
-			Object.keys(day.subjects).forEach((keySub, i) => {
-				let subject = day.subjects[keySub],
+			Object.keys(day.subjects).forEach((num) => {
+				let subject = day.subjects[num],
 					teacher = subject.teachers[0] ? `${subject.teachers[0].short_name}` : '',
 					room = subject.rooms[0] ? subject.rooms[0].name : '',
 					building = subject.rooms[0] ? subject.rooms[0].building.name : '',
 					place = room ? `  ${room}-${building}\n` : '',
 					type = types[subject.type] ? types[subject.type] : '';
-				response += `${i+1}. ${subject.discipline.name} ${type}\n${teacher}${place}`
+				response += `${num}. ${subject.discipline.name} ${type}\n${teacher}${place}`
 			})
 			response += '\n';
 		}
