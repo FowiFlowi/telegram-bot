@@ -98,6 +98,8 @@ bot.onText(/\/grouplist/, (msg, match) => {
 		name = text[1] || 'КВ-51';
 	Group.find({ name }, (err, group) => {
 		if (err) return console.log(err);
+		if (!group) return bot.sendMessage(msg.chat.id, 'Не нашел группу');
+		
 		let response = '';
 		for (let i = 0; i < group[0].amount; i++)
 			response += `${i+1}. ${group[0].list[i].name} ${group[0].list[i].surname}\n`;
@@ -198,6 +200,73 @@ bot.onText(/\/schedule/, (msg, match) => {
 			response += '\n';
 		}
 	})
+});
+
+bot.onText(/\/timesch/, (msg, match) => {
+	let response = '',
+		firstStart = new Date('1 8:30'),
+		len = new Date('1 1:35'),
+		shift = new Date('1 1:55');
+
+	for (let i = 0; i < 5; i++) {
+		let startM = firstStart.getMinutes() + shift.getMinutes() * i,
+			startH = firstStart.getHours() + shift.getHours() * i;
+		while(startM >= 60) {
+			startM -= 60;
+			startH++;
+		};
+
+		let endM = startM + len.getMinutes(),
+			endH = startH + len.getHours();
+		while(endM >= 60) {
+			endM -= 60;
+			endH++;
+		};
+		if (endM < 10) endM = '0' + endM;
+
+		response += `${i+1}. ${startH}:${startM} - ${endH}:${endM}\n`;
+	}
+	bot.sendMessage(msg.chat.id, response);
+});
+
+bot.onText(/\/timeleft/, (msg, match) => {
+	let response = '',
+		flag = false,
+		timeNow = new Date(),
+		currentHour = timeNow.getHours() + 2,
+		currentMinutes = timeNow.getMinutes(),
+		firstStart = new Date('1 8:30'),
+		len = new Date('1 1:35'),
+		shift = new Date('1 1:55');
+
+	for (let i = 0; i < 5; i++) {
+		let startM = firstStart.getMinutes() + shift.getMinutes() * i,
+			startH = firstStart.getHours() + shift.getHours() * i;
+		while(startM >= 60) {
+			startM -= 60;
+			startH++;
+		};
+
+		let endM = startM + len.getMinutes(),
+			endH = startH + len.getHours();
+		while(endM >= 60) {
+			endM -= 60;
+			endH++;
+		};
+
+		if (currentHour < endH && currentHour > startH) {
+			let hourLeft = endH - currentHour,
+				minutesLeft = endM - currentMinutes;
+			if (minutesLeft < 0) {
+				hourLeft--;
+				minutesLeft = 60 + minutesLeft;
+			}
+			response = `Тебе осталось выдержать ${hourLeft}:${minutesLeft}`;
+			flag = true;
+			break;
+		}
+	}
+	flag ? bot.sendMessage(msg.chat.id, response) : bot.sendMessage(msg.chat.id, 'Тебе повезло, ты не на паре');
 })
 
 bot.onText(/\/start/, (msg, match) => {
