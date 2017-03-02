@@ -230,40 +230,22 @@ bot.onText(/\/timesch/, (msg, match) => {
 });
 
 bot.onText(/\/timeleft/, (msg, match) => {
-	let response = '',
-		flag = false,
+	let len = 100 * 60 + 100 * 35, // 1:35
+		shift = 100 * 60 + 100 * 55, // 1:55
+		firstStart = 100 * 60 * 8 + 100 * 30, // 8:30
 		timeNow = new Date(),
-		currentHour = timeNow.getHours() + 2,
-		currentMinutes = timeNow.getMinutes(),
-		firstStart = new Date('1 8:30'),
-		len = new Date('1 1:35'),
-		shift = new Date('1 1:55');
+		curr = 100 * 60 * (timeNow.getHours() + 2) + 100 * timeNow.getMinutes(),
+		flag = false;
 
 	for (let i = 0; i < 5; i++) {
-		let startM = firstStart.getMinutes() + shift.getMinutes() * i,
-			startH = firstStart.getHours() + shift.getHours() * i;
-		while(startM >= 60) {
-			startM -= 60;
-			startH++;
-		};
+		let start = firstStart + shift * i,
+			end = start + len;
 
-		let endM = startM + len.getMinutes(),
-			endH = startH + len.getHours();
-		while(endM >= 60) {
-			endM -= 60;
-			endH++;
-		};
-
-		if (currentHour < endH && currentHour > startH) {
-			let hourLeft = endH - currentHour,
-				minutesLeft = endM - currentMinutes;
-			if (minutesLeft < 0) {
-				hourLeft--;
-				minutesLeft = 60 + minutesLeft;
-			}
-			response = `Тебе осталось выдержать ${hourLeft}:${minutesLeft}`;
+		if (curr > start && curr < end)	{
 			flag = true;
-			break;
+			let hours = Math.trunc((end - curr) / 100 / 60),
+				minutes = Math.trunc((end - curr) / 100);
+			response = `Тебе осталось: ${hours}:${minutes}`;
 		}
 	}
 	flag ? bot.sendMessage(msg.chat.id, response) : bot.sendMessage(msg.chat.id, 'Тебе повезло, ты не на паре');
