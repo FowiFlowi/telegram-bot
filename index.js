@@ -44,12 +44,14 @@ app.post('/', (req, res) => {	// requests from another app
 				return res.end('error');
 			}
 			SerdechkoBot.find({}, (err, group) => {
-				let groups = group[0].groups;
+				let groups = group[0].groups,
+					absText = abstract[0].text;
 				console.log('List of ids: ', groups)
 
 				groups.forEach((id) => {
 					bot.sendMessage(id, `${abstract[0].author} сохранил конспект "${abstract[0].name}" по предмету ${abstract[0].subject}`);
-					bot.sendMessage(id, abstract[0].text);
+
+					bot.sendMessage(id, absText);
 				});
 
 				res.end('Abstract has sent to the telegram chat');
@@ -75,7 +77,26 @@ bot.onText(/\/show/, (msg, match) => {
 			return bot.sendMessage(msg.chat.id, `Ничего не нашел :c \nВот список предметов: ${subjects.join('; ')}`);
 
 		abstracts.sort((a, b) => a.date - b.date);
-		bot.sendMessage(msg.chat.id, abstracts[number - 1].text);
+
+		let absText = abstracts[number - 1].text,
+			length = absText.length;
+		const maxLength = 4096;
+		if (length > maxLength) {
+			let i = 0;
+
+			while (i < length) {
+				j = i + maxLength;
+				if (j < length)
+					while (absText[j] != '\n') j--;
+
+				setTimeout(function(i, j) {
+					bot.sendMessage(msg.chat.id, absText.slice(i, j)) 
+				}, Math.trunc(i / 10), i, j);
+				
+				i = j + 1;
+			}
+		} else
+			bot.sendMessage(msg.chat.id, absText);
 	})
 });
 
@@ -243,9 +264,16 @@ bot.onText(/\/timeleft/, (msg, match) => {
 
 		if (curr > start && curr < end)	{
 			flag = true;
-			let hours = Math.trunc((end - curr) / 100 / 60),
-				minutes = Math.trunc((end - curr) / 100);
-			response = `Тебе осталось: ${hours}:${minutes}`;
+			let minutes = Math.trunc((end - curr) / 100),
+				ending;
+			if (minutes == 1) 
+				ending = 'минуточка'
+			else if (minutes % 10 < 5)
+				ending = 'минуточки'
+			else
+				ending = 'минуточек'
+
+			response = `Тебе осталось ${minutes} ${ending}`;
 		}
 	}
 	flag ? bot.sendMessage(msg.chat.id, response) : bot.sendMessage(msg.chat.id, 'Тебе повезло, ты не на паре');
