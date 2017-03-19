@@ -6,6 +6,7 @@ const TelegramBot = require('node-telegram-bot-api'),
 	SerdechkoBot = require('./models/telegram-bot'),
 	Group = require('./models/group'),
 	Schedule = require('./models/schedule'),
+	scheduleHandler = require('./schedule'),
 
 	config = require('./config'),
 	token = config.token,
@@ -128,100 +129,7 @@ bot.onText(/\/grouplist/, (msg, match) => {
 	})
 });
 
-bot.onText(/\/schedule/, (msg, match) => {
-	let text = match.input.split(' '),
-		weekLen = new Date(2016, 9, 8) - new Date(2016, 9, 1),
-		dateNow = new Date(),
-		dateBegin = new Date(2017, 2, 13),
-		isFirstWeek = Math.trunc(new Date(dateNow - dateBegin) / weekLen) % 2 == 0 ? 0 : 1, // or is Even?
-		weekDays = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'],
-		commands = ['week', 'today', 'tomorrow'],
-		command,
-		group = 'КВ-51',
-		isSetGroup = 0,
-		searchDay = '';
-
-	if (groups.indexOf(text[1]) + 1) {	// if group is set
-		group = text[1];
-		isSetGroup = 1;
-	}
-
-	if (text[1 + isSetGroup] && commands.indexOf(text[1 + isSetGroup].toLowerCase()) + 1) {	// if command is set
-		command = text[1 + isSetGroup].toLowerCase();
-		if (command == 'week') 
-			if (setWeekNumber(text[2 + isSetGroup])) return; // if week number set incorrect just end
-	} else if (isSearchDaySpecified(text[1 + isSetGroup])) {	// if command isn't set but search day is set
-		// capitalize first letter
-		searchDay = text[1 + isSetGroup].charAt(0).toUpperCase() + text[1 + isSetGroup].slice(1).toLowerCase();
-
-		if (setWeekNumber(text[2 + isSetGroup])) return;
-	} else if (text[1 + isSetGroup])	// if day is set incorrect
-		return bot.sendMessage(msg.chat.id, 'Не нашел такого дня');
-
-	function isSearchDaySpecified(string) {
-		if (!string) return 0;
-
-		string = string.charAt(0).toUpperCase() + string.slice(1).toLowerCase();
-		return weekDays.indexOf(string) + 1;
-	};
-
-	// sets isFirstWeek, if num undefined sets current week. If num is incorrect returns 1 else 0
-	function setWeekNumber(num) {
-		let res = 0;
-		num == 1 || num == 2 ? isFirstWeek = num % 2 
-							 : num ? res = 1
-							 	   : ''
-		if (res) bot.sendMessage(msg.chat.id, 'Это у тебя четная неделя или нет, солнце?');
-		return res;
-	}
-
-	Schedule.find({ group }, (err, schedule) => {
-		if (err) return console.log(err);
-		if (!schedule[0]) return bot.sendMessage(msg.chat.id, 'Странная группа у тебя, не знаю такой');
-
-		let twoWeeks = [schedule[0].firstWeek, schedule[0].secondWeek];
-			response = '';
-
-		if (command || searchDay) delete twoWeeks[isFirstWeek]
-
-		twoWeeks.forEach((week, i) => {
-			!command ? i == 0 ? response += 'First Week:\n' : response += 'Second Week:\n'
-					 : isFirstWeek ? response += 'First Week:\n' : response += 'Second Week:\n'
-
-			if (command == 'today' || command == 'tomorrow') {
-				let j = command == 'today' ? 1 : 0,
-					dayNum = (new Date()).getDay(),
-					day = week[dayNum - j];
-				dayServe(day)
-			} else if (searchDay) {
-				dayServe(week[weekDays.indexOf(searchDay)])
-			} else week.forEach(day => dayServe(day))
-		})
-		bot.sendMessage(msg.chat.id, response);
-
-
-		function dayServe(day) {	// function for out some day
-			if (!day) {
-				response = '';
-				return bot.sendMessage(msg.chat.id, 'У тебя выходной, расслабься');
-			}
-
-			let types = ['Лек', 'Практ', 'Лаб'];
-			response += `---${day.weekday}---\n`;
-
-			Object.keys(day.subjects).forEach((num) => {
-				let subject = day.subjects[num],
-					teacher = subject.teachers[0] ? `${subject.teachers[0].short_name}` : '',
-					room = subject.rooms[0] ? subject.rooms[0].name : '',
-					building = subject.rooms[0] ? subject.rooms[0].building.name : '',
-					place = room ? `  ${room}-${building}\n` : '',
-					type = types[subject.type] ? types[subject.type] : '';
-				response += `${num}. ${subject.discipline.name} ${type}\n${teacher}${place}`
-			})
-			response += '\n';
-		}
-	})
-});
+bot.onText(/\/schedule/, msg => scheduleHandler(msg, bot, SerdechkoBot, groups, Schedule));
 
 bot.onText(/\/timesch/, (msg, match) => {
 	let response = '',
