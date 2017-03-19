@@ -129,7 +129,9 @@ bot.onText(/\/grouplist/, (msg, match) => {
 	})
 });
 
-bot.onText(/\/schedule/, msg => scheduleHandler(msg, bot, SerdechkoBot, groups, Schedule));
+bot.onText(/\/schedule/, (msg, match) => {
+	scheduleHandler(msg, bot, SerdechkoBot, groups, Schedule);
+});
 
 bot.onText(/\/timesch/, (msg, match) => {
 	let response = '',
@@ -174,10 +176,17 @@ bot.onText(/\/timeleft/, (msg, match) => {
 			flag = true;
 			let minutes = Math.trunc((end - curr) / 100),
 				ending;
-			if (minutes == 1) 
-				ending = 'минуточка'
-			else if (minutes % 10 < 5)
-				ending = 'минуточки'
+
+			if (time % 10 == 1)
+				if (time == 11)
+					ending = 'минуточек'
+				else
+					ending = 'минуточка'
+			else if (time % 10 < 5 && time % 10 != 0)
+				if (time > 10 && time < 15)
+					ending = 'минуточек'
+				else
+					ending = 'минуточки'
 			else
 				ending = 'минуточек'
 
