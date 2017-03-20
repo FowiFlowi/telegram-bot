@@ -3,6 +3,8 @@ const mongoose = require('../mongoose'),
 	Schema = mongoose.Schema,
 
 	SerdechkoBot = new Schema({
+		currWeek: Number,
+		flagWeek: Boolean,
 		groups: []
 	});
 

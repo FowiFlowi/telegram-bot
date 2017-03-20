@@ -8,13 +8,14 @@ module.exports = function(msg, bot, SerdechkoBot, groups, Schedule) {
 
 	promise.then(bot => {
 		currDay = (new Date).getDay();
+
 		if (currDay == 1 && bot.flagWeek) {
 			bot.flagWeek = false;
-			bot._doc.currWeek ? bot._doc.currWeek-- : bot._doc.currWeek++;
-		} else
+			bot.currWeek ? bot.currWeek-- : bot.currWeek++;
+		} else if (currDay != 1)
 			bot.flagWeek = true;
 
-		isFirstWeek = bot._doc.currWeek;
+		isFirstWeek = bot.currWeek;
 		return bot.save();
 	})
 	.then(() => {
