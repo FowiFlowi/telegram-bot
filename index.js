@@ -71,41 +71,65 @@ app.use((err, req, res, next) => {
 bot.onText(/\/show/, (msg, match) => {
 	let text = match.input.split(' '),
 		subject = text[1],
-		number = text[2];
+		command = text[2],
+		timer = 500;
+
+	if (!(subjects.indexOf(subject) + 1))
+		return bot.sendMessage(msg.chat.id, `Не нашел такого предмета: ${subjects.join('; ')}`)
+	if (!command)
+		return bot.sendMessage(msg.chat.id, `Введи пожалуйста название предмета и команду: ${subjects.join('; ')}`)
 
 	Abstracts.find({ subject }, (err, abstracts) => {
-		if (err || !abstracts[number - 1]) 
-			return bot.sendMessage(msg.chat.id, `Ничего не нашел :c \nВот список предметов: ${subjects.join('; ')}`);
+		if (err) return bot.sendMessage(msg.chat.id, 'Ой, какая-то ошибка с базой данных. Попробуй еще')
 
 		abstracts.sort((a, b) => a.date - b.date);
 
-		let absText = abstracts[number - 1].text,
-			length = absText.length;
-		const maxLength = 4096;
-		if (length > maxLength) {
-			let i = 0;
+		if (command == 'all') 
+			abstracts.forEach(abstract => sendAbstract(abstract))
+		else if (Number.isInteger(+command))
+			sendAbstract(abstracts[command - 1])
+		else if (isInterval(command))
+			for (let i = command[0] - 1; i < command[2]; i++)
+				sendAbstract(abstracts[i])
+		else bot.sendMessage(msg.chat.id, 'Что-то ты вообще не то написал')
 
-			while (i < length) {
-				j = i + maxLength;
-				if (j < length)
-					while (absText[j] != '\n') j--;
+		function sendAbstract(abstract) { // very dangerous operations with Timeouts :/
+			setTimeout(() => {
+				let absText = abstract.text,
+					length = absText.length
+				const maxLength = 4096
+				if (length > maxLength) {
+					let i = 0;
 
-				setTimeout(function(i, j) {
-					bot.sendMessage(msg.chat.id, absText.slice(i, j)) 
-				}, Math.trunc(i / 10), i, j);
-				
-				i = j + 1;
-			}
-		} else
-			bot.sendMessage(msg.chat.id, absText);
+					while (i < length) {
+						j = i + maxLength
+						if (j < length)
+							while (absText[j] != '\n') j--
+
+						setTimeout((i, j) => {
+							bot.sendMessage(msg.chat.id, absText.slice(i, j)) 
+						}, Math.trunc(i / 10), i, j)
+						
+						i = j + 1
+					}
+				} else
+					bot.sendMessage(msg.chat.id, absText)
+			}, timer)
+			timer += 500;
+		}
+
+		function isInterval(command) {
+			command = command.split('')
+			return (command[0] < command[2] && abstracts[command[0] - 1] && abstracts[command[2] - 1] && command[1] == '-') ? true : false
+		}
 	})
-});
+})
 
 bot.onText(/\/all/, (msg, match) => {
 	let res = 'Вот что по лекциям:\n',
 		num = subjects.length,
 		counter = 0;
-	subjects.forEach((subject) => {
+	subjects.forEach(subject => {
 		Abstracts.find({ subject }, (err, abstracts) => {
 			if (abstracts.length != 0)
 				res += `${subject}: ${abstracts.length}\n`;
@@ -177,13 +201,13 @@ bot.onText(/\/timeleft/, (msg, match) => {
 			let minutes = Math.trunc((end - curr) / 100),
 				ending;
 
-			if (time % 10 == 1)
-				if (time == 11)
+			if (minutes % 10 == 1)
+				if (minutes == 11)
 					ending = 'минуточек'
 				else
 					ending = 'минуточка'
-			else if (time % 10 < 5 && time % 10 != 0)
-				if (time > 10 && time < 15)
+			else if (minutes % 10 < 5 && minutes % 10 != 0)
+				if (minutes > 10 && minutes < 15)
 					ending = 'минуточек'
 				else
 					ending = 'минуточки'
@@ -208,6 +232,10 @@ bot.onText(/\/start/, (msg, match) => {
 		}
 	});
 });
+
+bot.onText(/\/die/, (msg, match) => {
+	bot.sendMessage(msg.chat.id, 'Я ХОЧУ СДОХНУТЬ!!!!!!')
+})
 
 bot.onText(/\/help/, (msg, match) => {
 	bot.sendMessage(msg.chat.id, `Я бот-сердечко. Записываю лекции и дарю любовь <3\n\n` +

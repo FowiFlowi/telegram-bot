@@ -6,31 +6,35 @@ module.exports = function(msg, bot, SerdechkoBot, groups, Schedule) {
 		currDay,
 		promise = SerdechkoBot.findOne({}).exec();
 
-	promise.then(bot => {
+	promise.then(botData => {
 		currDay = (new Date).getDay();
 
-		if (currDay == 1 && bot.flagWeek) {
-			bot.flagWeek = false;
-			bot.currWeek ? bot.currWeek-- : bot.currWeek++;
+		if (currDay == 1 && botData.flagWeek) {
+			botData.flagWeek = false;
+			botData.currWeek ? botData.currWeek-- : botData.currWeek++;
 		} else if (currDay != 1)
-			bot.flagWeek = true;
+			botData.flagWeek = true;
 
-		isFirstWeek = bot.currWeek;
-		return bot.save();
-	})
-	.then(() => {
+		isFirstWeek = botData.currWeek;
+		botData.save();
+
 		let input = msg.text.split(' '),
 			isGroup = 0,
 			group = 'КВ-51',
-			commands = ['week', 'today', 'tomorrow'];
+			commands = ['week', 'today', 'tomorrow', 'all'];
 
-		if (groups.indexOf(input[1].toUpperCase()) + 1) { // if group is specified
+		if (input[1] && groups.indexOf(input[1].toUpperCase()) + 1) { // if group is specified
 			group = input[1].toUpperCase();
 			isGroup = 1;
 		};
 
 		let fArg = input[1 + isGroup], // command or searched day
 			weekNum = input[2 + isGroup]; // specified week number
+
+		if (!fArg) {
+			bot.sendMessage(msg.chat.id, 'Выбери что-то: all, today, tomorrow');
+			return 0;
+		}
 
 		if (weekNum) // if week number specified then change isFirstWeek
 			if (weekNum == 1 || weekNum == 2)
@@ -61,7 +65,7 @@ module.exports = function(msg, bot, SerdechkoBot, groups, Schedule) {
 			if (command == 'tomorrow') // switch week if it's Sunday now
 				if (currDay == 0) isFirstWeek ? isFirstWeek-- : isFirstWeek++
 
-			if (command || searchDay) delete twoWeeks[isFirstWeek]; // leave one week if command or search day is specified
+			if (command != 'all' || searchDay) delete twoWeeks[isFirstWeek]; // leave one week if command or search day is specified
 
 			twoWeeks.forEach((week, i) => {
 				i == 0 ? response += 'First Week:\n' : response += 'Second Week:\n'
@@ -71,9 +75,8 @@ module.exports = function(msg, bot, SerdechkoBot, groups, Schedule) {
 					sendDay(week[currDay - j]);
 				} else if (searchDay) 
 					sendDay(week[weekDays.indexOf(searchDay)]);
-				else
-					week.forEach(day => sendDay(day));
-
+				else if (command == 'all')
+					week.forEach(day => sendDay(day))
 
 				function sendDay(day) {	// function for out some day
 					if (!day) {
@@ -83,7 +86,7 @@ module.exports = function(msg, bot, SerdechkoBot, groups, Schedule) {
 
 					let types = ['Лек', 'Практ', 'Лаб'];
 					response += `---${day.weekday}---\n`;
-
+					
 					for (num in day.subjects) {
 						let subject = day.subjects[num],
 							teacher = subject.teachers[0] ? `${subject.teachers[0].short_name}` : '',
