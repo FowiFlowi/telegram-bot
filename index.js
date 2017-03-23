@@ -1,4 +1,5 @@
 const TelegramBot = require('node-telegram-bot-api'),
+	Telegraph = require('telegraph-node'),
 	express = require('express'),
 	bodyParser = require('body-parser'),
 
@@ -18,7 +19,8 @@ const TelegramBot = require('node-telegram-bot-api'),
 	groups = ['КВ-51', 'КВ-52', 'КВ-53'],
 
 	app = express(),
-	bot = new TelegramBot(token);
+	bot = new TelegramBot(token),
+	ph = new Telegraph()
 
 bot.setWebHook(`${url}/bot${token}`);
 
@@ -72,7 +74,7 @@ bot.onText(/\/show/, (msg, match) => {
 	let text = match.input.split(' '),
 		subject = text[1],
 		command = text[2],
-		timer = 500;
+		timer = 400;
 
 	if (!(subjects.indexOf(subject) + 1))
 		return bot.sendMessage(msg.chat.id, `Не нашел такого предмета: ${subjects.join('; ')}`)
@@ -93,29 +95,32 @@ bot.onText(/\/show/, (msg, match) => {
 				sendAbstract(abstracts[i])
 		else bot.sendMessage(msg.chat.id, 'Что-то ты вообще не то написал')
 
-		function sendAbstract(abstract) { // very dangerous operations with Timeouts :/
+		function sendAbstract(abstract) {
 			setTimeout(() => {
-				let absText = abstract.text,
-					length = absText.length
-				const maxLength = 4096
-				if (length > maxLength) {
-					let i = 0;
+				bot.sendMessage(msg.chat.id, abstract.telegraph_url)
+			}, timer += 400)
+			// setTimeout(() => {
+			// 	let absText = abstract.text,
+			// 		length = absText.length
+			// 	const maxLength = 4096
+			// 	if (length > maxLength) {
+			// 		let i = 0;
 
-					while (i < length) {
-						j = i + maxLength
-						if (j < length)
-							while (absText[j] != '\n') j--
+			// 		while (i < length) {
+			// 			j = i + maxLength
+			// 			if (j < length)
+			// 				while (absText[j] != '\n') j--
 
-						setTimeout((i, j) => {
-							bot.sendMessage(msg.chat.id, absText.slice(i, j)) 
-						}, Math.trunc(i / 10), i, j)
+			// 			setTimeout((i, j) => {
+			// 				bot.sendMessage(msg.chat.id, absText.slice(i, j)) 
+			// 			}, Math.trunc(i / 10), i, j)
 						
-						i = j + 1
-					}
-				} else
-					bot.sendMessage(msg.chat.id, absText)
-			}, timer)
-			timer += 500;
+			// 			i = j + 1
+			// 		}
+			// 	} else
+			// 		bot.sendMessage(msg.chat.id, absText)
+			// }, timer)
+			// timer += 500;
 		}
 
 		function isInterval(command) {
@@ -131,10 +136,12 @@ bot.onText(/\/all/, (msg, match) => {
 		counter = 0;
 	subjects.forEach(subject => {
 		Abstracts.find({ subject }, (err, abstracts) => {
-			if (abstracts.length != 0)
-				res += `${subject}: ${abstracts.length}\n`;
-			counter++;
-			if (counter == num) bot.sendMessage(msg.chat.id, res);
+			if (!err) {
+				if (abstracts.length != 0)
+					res += `${subject}: ${abstracts.length}\n`;
+				counter++;
+				if (counter == num) bot.sendMessage(msg.chat.id, res);
+			}
 		})
 	})
 });
@@ -224,14 +231,14 @@ bot.onText(/\/start/, (msg, match) => {
 	SerdechkoBot.find({}, (err, data) => {
 		let groups = data[0].groups;
 		if (!(groups.indexOf(msg.chat.id) + 1)) {
-			groups.push(msg.chat.id);
-			SerdechkoBot.update({}, { groups }, err => err ? console.log(err) : console.log('New group!'));
-			bot.sendMessage(msg.chat.id, 'Привет <3');
+			groups.push(msg.chat.id)
+			SerdechkoBot.update({}, { groups }, err => err ? console.log(err) : console.log('New group!'))
+			bot.sendMessage(msg.chat.id, 'Привет <3')
 		} else {
-			bot.sendMessage(msg.chat.id, 'Я тебя уже знаю!');
+			bot.sendMessage(msg.chat.id, 'Я тебя уже знаю!')
 		}
-	});
-});
+	})
+})
 
 bot.onText(/\/die/, (msg, match) => {
 	bot.sendMessage(msg.chat.id, 'Я ХОЧУ СДОХНУТЬ!!!!!!')
@@ -242,14 +249,18 @@ bot.onText(/\/help/, (msg, match) => {
 		`/all - посмотреть что по лекциям\n/show subject number - посмотреть конкретную лекцию\n` +
 		`/grouplist - посмотреть список своей группы\n/schedule - посмотреть расписание\n/love - дарить любовь\n` +
 		`/schedule group/day/today/tomorrow - как хочешь, так и юзаешь, чтобы посмотреть расписание любой группы потока`);
-});
+})
 
 bot.onText(/\/love/, (msg, match) => {
-	bot.sendMessage(msg.chat.id, 'Всем любви в этом чатике <3');
+	bot.sendMessage(msg.chat.id, 'Всем любви в этом чатике <3')
 	// bot.sendMessage(msg.chat.id, 'Это love-police. Вы арестованы за нелюбовь к чатику. Штраф - ваше сердечко. Впредь без нарушений');
 })
 
-bot.on('webhook_error', error => console.log(error));
+bot.onText(/\/test/, (msg, match) => {
+	bot.sendMessage(msg.chat.id, 'http://telegra.ph/Test-03-23-2')
+})
+
+bot.on('webhook_error', error => console.log(error))
 
 
-app.listen(port, () => console.log(`Express-bot is running on port ${port}`));
+app.listen(port, () => console.log(`Express-bot is running on port ${port}`))
