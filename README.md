@@ -1,5 +1,6 @@
 # telegram-bot
 Telegram bot for university
+@SerdechkoBot
 
 He can receive requests from another app that send message 'Hey, new abstract in db!' when someone has wrote it and run script. Bot looks through and send this abstract to the telegram chat.
 
